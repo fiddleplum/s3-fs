@@ -1,13 +1,12 @@
 {
   "name": "@fiddleplum/s3-fs",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "An AWS S3 file system.",
   "main": "",
   "dependencies": {
     "aws-sdk": "^2.211.0"
   },
-  "scripts": {
-  },
+  "scripts": {},
   "repository": {
     "type": "git",
     "url": "git+https://github.com/fiddleplum/s3-fs.git"
