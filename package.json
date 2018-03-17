@@ -1,5 +1,5 @@
 {
-  "name": "s3-fs",
+  "name": "@fiddleplum/s3-fs",
   "version": "0.0.0",
   "description": "An AWS S3 file system.",
   "main": "",
