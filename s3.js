@@ -4,9 +4,13 @@ import AWS from 'aws-sdk'
 // All folders end in '/', except for the root, which is ''.
 class S3 {
 	// Constructs the AWS S3 file system.
-	constructor(accessKey, secretKey, region, bucket) {
+	constructor(accessKey, secretKey, region, bucket, baseFolder) {
 		this._s3 = null;
 		this._bucket = bucket;
+		this._baseFolder = baseFolder;
+		if (!this._baseFolder.endsWith('/')) {
+			this._baseFolder += '/';
+		}
 		AWS.config.update({
 			accessKeyId: accessKey,
 			secretAccessKey: secretKey,
@@ -40,7 +44,7 @@ class S3 {
 	exists(path) {
 		let params = {
 			Bucket: this._bucket,
-			Key: path,
+			Key: this._baseFolder + path,
 		};
 		return new Promise((resolve, reject) => {
 			this._s3.headObject(params, (err, data) => {
@@ -55,7 +59,7 @@ class S3 {
 	list(path, marker) {
 		let params = {
 			Bucket: this._bucket,
-			Prefix: path,
+			Prefix: this._baseFolder + path,
 			Delimiter: '/'
 		};
 		return new Promise((resolve, reject) => {
@@ -71,7 +75,7 @@ class S3 {
 					};
 					for (let i in data.CommonPrefixes) {
 						let prefix = data.CommonPrefixes[i].Prefix;
-						if (prefix == path) {
+						if (prefix == this._baseFolder + path) {
 							continue;
 						}
 						let name = this.name(prefix);
@@ -93,10 +97,13 @@ class S3 {
 
 	// Creates a child file of the given name and type.
 	// Returns a promise that resolves with the newly created file path and rejects with an error message.
-	createFile(parentPath, name, type) {
+	createFile(parentFolderPath, name, type) {
+		if (!parentFolderPath.endsWith('/')) {
+			parentFolderPath += '/';
+		}
 		let params = {
 			Bucket: this._bucket,
-			Key: parentPath + name,
+			Key: this._baseFolder + parentFolderPath + name,
 			ContentType: type
 		};
 		return new Promise((resolve, reject) => {
@@ -105,7 +112,7 @@ class S3 {
 					reject(err.message);
 				}
 				else {
-					resolve(parentPath + name);
+					resolve(parentFolderPath + name);
 				}
 			});
 		});
@@ -113,10 +120,13 @@ class S3 {
 
 	// Creates a child folder of the given name.
 	// Returns a promise that resolves with the newly created folder path and rejects with an error message.
-	createFolder(parentPath, name) {
+	createFolder(parentFolderPath, name) {
+		if (!parentFolderPath.endsWith('/')) {
+			parentFolderPath += '/';
+		}
 		let params = {
 			Bucket: this._bucket,
-			Key: parentPath + name
+			Key: this._baseFolder + parentFolderPath + name
 		};
 		return new Promise((resolve, reject) => {
 			this._s3.putObject(params, (err, data) => {
@@ -124,7 +134,7 @@ class S3 {
 					reject(err.message);
 				}
 				else {
-					resolve(parentPath + name);
+					resolve(parentFolderPath + name);
 				}
 			});
 		});
@@ -137,7 +147,7 @@ class S3 {
 		if (path.endsWith('/')) {
 			let params = {
 				Bucket: this._bucket,
-				Prefix: path
+				Prefix: this._baseFolder + path
 			};
 			return new Promise((resolve, reject) => {
 				this._s3.listObjectsV2(params, (err, data) => {
@@ -147,9 +157,9 @@ class S3 {
 					else if (data.CommonPrefixes.length == 0 && data.Contents.length == 1) { // 1 is for the path itself
 						let params = {
 							Bucket: this._bucket,
-							Key: path
+							Key: this._baseFolder + path
 						};
-						this._s3.deleteObject(params, function (err, data) {
+						this._s3.deleteObject(params, (err, data) => {
 							resolve(true);
 						});
 					}
@@ -162,7 +172,7 @@ class S3 {
 		else {
 			let params = {
 				Bucket: this._bucket,
-				Key: path
+				Key: this._baseFolder + path
 			};
 			return new Promise((resolve, reject) => {
 				this._s3.deleteObject(params, (err, data) => {
@@ -182,7 +192,7 @@ class S3 {
 	load(path, binary) {
 		let params = {
 			Bucket: this._bucket,
-			Key: path
+			Key: this._baseFolder + path
 		};
 		return new Promise((resolve, reject) => {
 			this._s3.getObject(params, (err, data) => {
@@ -204,7 +214,7 @@ class S3 {
 	save(path, data) {
 		let params = {
 			Bucket: this._bucket,
-			Key: path,
+			Key: this._baseFolder + path,
 			Body: data
 		};
 		return new Promise((resolve, reject) => {
