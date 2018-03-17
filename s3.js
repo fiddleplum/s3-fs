@@ -1,4 +1,4 @@
-import AWS from './node_modules/aws-sdk/index'
+import AWS from './node_modules/aws-sdk/index.js'
 
 // A simplified interface for the AWS S3 file system.
 // All folders end in '/', except for the root, which is ''.
