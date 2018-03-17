@@ -1,0 +1,21 @@
+{
+  "name": "s3-fs",
+  "version": "0.0.0",
+  "description": "An AWS S3 file system.",
+  "main": "",
+  "dependencies": {
+    "aws-sdk": "^2.211.0"
+  },
+  "scripts": {
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fiddleplum/s3-fs.git"
+  },
+  "author": "Stephen Hurley",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/fiddleplum/s3-fs/issues"
+  },
+  "homepage": "https://github.com/fiddleplum/s3-fs#readme"
+}
