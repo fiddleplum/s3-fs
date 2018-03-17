@@ -36,7 +36,7 @@ class S3 {
 	}
 
 	// Determines if an entry exists.
-	// Returns a promise taking a boolean whether the entry exists.
+	// Returns a promise that resolves with a boolean whether the entry exists.
 	exists(path) {
 		let params = {
 			Bucket: this._bucket,
@@ -51,7 +51,7 @@ class S3 {
 
 	// Lists the child folders and files in this folder, up to 1000 objects.
 	// If the marker is not null, use the marker in subsequent calls to get more objects.
-	// Returns a promise that takes an object { folders: [], files: [], marker }, of the entries that are the child names of this folder.
+	// Returns a promise that resolves with an object { folders: [], files: [], marker }, of the entries that are the child names of this folder and rejects with an error message.
 	list(path, marker) {
 		let params = {
 			Bucket: this._bucket,
@@ -60,34 +60,39 @@ class S3 {
 		};
 		return new Promise((resolve, reject) => {
 			this._s3.listObjectsV2(params, (err, data) => {
-				let children = {
-					folders: [],
-					files: [],
-					marker: null
-				};
-				for (let i in data.CommonPrefixes) {
-					let prefix = data.CommonPrefixes[i].Prefix;
-					if (prefix == path) {
-						continue;
+				if (err) {
+					reject(err.message);
+				}
+				else {
+					let children = {
+						folders: [],
+						files: [],
+						marker: null
+					};
+					for (let i in data.CommonPrefixes) {
+						let prefix = data.CommonPrefixes[i].Prefix;
+						if (prefix == path) {
+							continue;
+						}
+						let name = this.name(prefix);
+						children.folders.push(name);
 					}
-					let name = this.name(prefix);
-					children.folders.push(name);
+					for (let i in data.Contents) {
+						let key = data.Contents[i].Key;
+						let name = this.name(key);
+						children.files.push(name);
+					}
+					if (data.IsTrucated) {
+						children.marker = data.NextMarker;
+					}
+					resolve(children);
 				}
-				for (let i in data.Contents) {
-					let key = data.Contents[i].Key;
-					let name = this.name(key);
-					children.files.push(name);
-				}
-				if (data.IsTrucated) {
-					children.marker = data.NextMarker;
-				}
-				resolve(children);
 			});
 		});
 	}
 
 	// Creates a child file of the given name and type.
-	// Returns a promise that takes the newly created file path.
+	// Returns a promise that resolves with the newly created file path and rejects with an error message.
 	createFile(parentPath, name, type) {
 		let params = {
 			Bucket: this._bucket,
@@ -96,13 +101,18 @@ class S3 {
 		};
 		return new Promise((resolve, reject) => {
 			this._s3.putObject(params, (err, data) => {
-				resolve(parentPath + name);
+				if (err) {
+					reject(err.message);
+				}
+				else {
+					resolve(parentPath + name);
+				}
 			});
 		});
 	}
 
 	// Creates a child folder of the given name.
-	// Returns a promise that takes the newly created folder path..
+	// Returns a promise that resolves with the newly created folder path and rejects with an error message.
 	createFolder(parentPath, name) {
 		let params = {
 			Bucket: this._bucket,
@@ -110,14 +120,19 @@ class S3 {
 		};
 		return new Promise((resolve, reject) => {
 			this._s3.putObject(params, (err, data) => {
-				resolve(parentPath + name);
+				if (err) {
+					reject(err.message);
+				}
+				else {
+					resolve(parentPath + name);
+				}
 			});
 		});
 	}
 
 	// Deletes a object at the path.
 	// If it is a folder, it only deletes it if there are no sub-folders or sub-files.
-	// Returns a promise that takes boolean if it was deleted.
+	// Returns a promise that resolves with boolean if it was deleted and rejects with an error message.
 	delete(path) {
 		if (path.endsWith('/')) {
 			let params = {
@@ -126,7 +141,10 @@ class S3 {
 			};
 			return new Promise((resolve, reject) => {
 				this._s3.listObjectsV2(params, (err, data) => {
-					if (data.CommonPrefixes.length == 0 && data.Contents.length == 1) { // 1 is for the path itself
+					if (err) {
+						reject(err.message);
+					}
+					else if (data.CommonPrefixes.length == 0 && data.Contents.length == 1) { // 1 is for the path itself
 						let params = {
 							Bucket: this._bucket,
 							Key: path
@@ -148,28 +166,41 @@ class S3 {
 			};
 			return new Promise((resolve, reject) => {
 				this._s3.deleteObject(params, (err, data) => {
-					resolve(true);
+					if (err) {
+						reject(err.message);
+					}
+					else {
+						resolve(true);
+					}
 				});
 			});
 		}
 	}
 
 	// Gets the contents of the file at the path.
-	// Returns a promise that takes the data.
-	load(path) {
+	// Returns a promise that resolves with the data and rejects with an error message.
+	load(path, binary) {
 		let params = {
 			Bucket: this._bucket,
 			Key: path
 		};
 		return new Promise((resolve, reject) => {
 			this._s3.getObject(params, (err, data) => {
-				resolve(new TextDecoder("utf-8").decode(data.Body));
+				if (err) {
+					reject(err.message);
+				}
+				else if (binary) {
+					resolve(data.Body);
+				}
+				else {
+					resolve(new TextDecoder("utf-8").decode(data.Body));
+				}
 			});
 		});
 	}
 
 	// Saves the data to the file at the path.
-	// Returns a promise that takes nothing.
+	// Returns a promise that resolves with nothing and rejects with an error message.
 	save(path, data) {
 		let params = {
 			Bucket: this._bucket,
@@ -178,7 +209,12 @@ class S3 {
 		};
 		return new Promise((resolve, reject) => {
 			this._s3.putObject(params, (err, data) => {
-				resolve();
+				if (err) {
+					reject(err.message);
+				}
+				else {
+					resolve();
+				}
 			});
 		});
 	}
