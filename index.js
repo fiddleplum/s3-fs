@@ -1,8 +1,8 @@
-import AWS from 'aws-dsk'
+import AWS from 'aws-sdk'
 
 // A simplified interface for the AWS S3 file system.
 // All folders end in '/', except for the root, which is ''.
-class S3 {
+class S3FS {
 	// Constructs the AWS S3 file system.
 	constructor(accessKey, secretKey, region, bucket, baseFolder) {
 		this._s3 = null;
@@ -230,4 +230,4 @@ class S3 {
 	}
 }
 
-export default S3;
+export default S3FS;
